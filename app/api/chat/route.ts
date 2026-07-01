@@ -11,6 +11,7 @@ import { env } from "@/lib/env.mjs";
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { z } from 'zod';
 import { createResource } from '@/lib/actions/resources';
+import { findRelevantContent } from '@/lib/ai/embedding';
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
@@ -42,6 +43,13 @@ const apiKey = env.DEEPSEEK_API_KEY;
             .describe('the content or resource to add to the knowledge base'),
         }),
         execute: async ({ content }) => createResource({ content }),
+      }),
+      getInformation: tool({
+        description: `get information from your knowledge base to answer questions.`,
+        inputSchema: z.object({
+          question: z.string().describe('the users question'),
+        }),
+        execute: async ({ question }) => findRelevantContent(question),
       }),
     },
   });
