@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { registerTelemetry } from 'ai';
+import { DevToolsTelemetry } from '@ai-sdk/devtools';
+
+registerTelemetry(DevToolsTelemetry());
 
 const inter = Inter({ subsets: ["latin"] });
 
