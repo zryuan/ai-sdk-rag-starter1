@@ -31,7 +31,7 @@ const apiKey = env.ZHIPU_API_KEY;
   const result = streamText({
     model: zhipu('GLM-4.6V'),
     messages: modelMessages,
-    system: `You are a helpful assistant. Check your knowledge base before answering any questions.
+    instructions: `You are a helpful assistant. Check your knowledge base before answering any questions.
     Only respond to questions using information from tool calls.
     if no relevant information is found in the tool calls, respond, "Sorry, I don't know."`,
     stopWhen: isStepCount(10),
@@ -54,6 +54,10 @@ const apiKey = env.ZHIPU_API_KEY;
         execute: async ({ question }) => findRelevantContent(question),
       }),
     },
+    prepareStep(ctx) {
+      console.log('ctx', ctx)
+      return {}
+    }
   });
 
   return createUIMessageStreamResponse({
