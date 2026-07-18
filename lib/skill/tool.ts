@@ -1,5 +1,7 @@
 import yaml from 'yaml'
 import { Dirent } from 'node:fs';
+import { tool } from 'ai'
+import { z } from 'zod'
 interface Sandbox {
   readFile(filePath: string, encoding?: BufferEncoding): Promise<string>;
   readdir(dirPath: string, options?: { withFileTypes?: boolean }): Promise<string[] | Dirent[]>;
@@ -11,7 +13,14 @@ interface SkillMetadata {
   path: string;
 }
 
-export async function getSkillsMetaData(
+
+function parseFrontmatter(content: string) {
+  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!match?.[1]) throw new Error('No frontmatter found');
+  return yaml.parse(match[1]);
+}
+
+export async function discoverSkills(
   sb: Sandbox,
   directories: string[],
 ): Promise<SkillMetadata[]> {
@@ -53,8 +62,47 @@ export async function getSkillsMetaData(
   return skills;
 }
 
-function parseFrontmatter(content: string) {
-  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  if (!match?.[1]) throw new Error('No frontmatter found');
-  return yaml.parse(match[1]);
+export function buildSkillsPrompt(skills: SkillMetadata[]): string {
+  const skillsList = skills
+    .map(s => `- ${s.name}: ${s.description}`)
+    .join('\n');
+
+  return `
+## Skills
+
+Use the \`loadSkill\` tool to load a skill when the user's request
+would benefit from specialized instructions.
+
+Available skills:
+${skillsList}
+`;
+}
+
+function stripFrontmatter(content: string): string {
+  const match = content.match(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/);
+  return match ? content.slice(match[0].length).trim() : content.trim();
+}
+
+export function createLoadSkillTool(sb: Sandbox, skills: SkillMetadata[]) {
+  return tool({
+    description: 'Load a skill to get specialized instructions',
+    inputSchema: z.object({
+      name: z.string().describe('The skill name to load'),
+    }),
+    execute: async ({ name }) => {
+      const skill = skills.find(s => s.name.toLowerCase() === name.toLowerCase());
+      if (!skill) {
+        return { error: `Skill '${name}' not found` };
+      }
+
+      const skillFile = `${skill.path}/SKILL.md`;
+      const content = await sb.readFile(skillFile, 'utf-8');
+      const body = stripFrontmatter(content);
+
+      return {
+        skillDirectory: skill.path,
+        content: body,
+      };
+    },
+  });
 }

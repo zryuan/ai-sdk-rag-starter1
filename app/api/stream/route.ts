@@ -12,7 +12,6 @@ import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { z } from 'zod';
 import { createResource } from '@/lib/actions/resources';
 import { findRelevantContent } from '@/lib/ai/embedding';
-import { addSkillsPrompt, getLoadSkillTool } from '@/lib/skill'
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
@@ -54,13 +53,10 @@ const apiKey = env.ZHIPU_API_KEY;
         }),
         execute: async ({ question }) => findRelevantContent(question),
       }),
-      loadSkill: await getLoadSkillTool(),
     },
-    async prepareStep(ctx) {
-      const skillsPrompt = await addSkillsPrompt()
-      return {
-        instructions: `${ctx.instructions}\n\n${skillsPrompt}`
-      }
+    prepareStep(ctx) {
+      console.log('ctx', ctx.instructions)
+      return {}
     }
   });
 

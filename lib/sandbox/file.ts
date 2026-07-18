@@ -1,4 +1,5 @@
 import { readFile as fsReadFile, readdir as fsReaddir } from 'node:fs/promises';
+import { Dirent } from 'node:fs';
 import { resolve } from 'node:path';
 
 /**
@@ -15,21 +16,21 @@ export async function readFile(
   return fsReadFile(absolutePath, { encoding });
 }
 
-/**
- * 读取目录内容
- * @param dirPath 目录路径（相对或绝对）
- * @param options.withFileTypes 是否返回 Dirent 对象，默认 false
- * @returns 文件名数组
- */
 export async function readdir(
   dirPath: string,
   options?: { withFileTypes?: boolean },
-): Promise<string[]> {
+): Promise<string[]>;
+export async function readdir(
+  dirPath: string,
+  options: { withFileTypes: true },
+): Promise<Dirent[]>;
+export async function readdir(
+  dirPath: string,
+  options?: { withFileTypes?: boolean },
+): Promise<string[] | Dirent[]> {
   const absolutePath = resolve(dirPath);
-  const { withFileTypes = false } = options ?? {};
-  if (withFileTypes) {
-    const entries = await fsReaddir(absolutePath, { withFileTypes: true });
-    return entries.map((e) => e.name);
+  if (options?.withFileTypes) {
+    return fsReaddir(absolutePath, { withFileTypes: true });
   }
   return fsReaddir(absolutePath);
 }
