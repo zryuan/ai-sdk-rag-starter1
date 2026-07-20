@@ -80,7 +80,6 @@ export default function Chat() {
             files && files.length > 0
               ? await convertFilesToDataURLs(files)
               : [];
-          console.log('fileParts', fileParts)
           sendMessage({
             role: 'user',
             parts: [{ type: 'text', text: input }, ...fileParts],
